@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Unscrambler</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .upload-btn {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background 0.3s;
+        }
+
+        .upload-btn:hover {
+            background: #45a049;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .processing {
+            text-align: center;
+            color: #666;
+            font-size: 18px;
+            margin: 20px 0;
+        }
+
+        .error {
+            color: #f44336;
+            text-align: center;
+            margin: 10px 0;
+        }
+
+        .grid-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .word-search-grid {
+            display: grid;
+            gap: 2px;
+            justify-content: center;
+            margin: 20px 0;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 10px;
+        }
+
+        .grid-cell {
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            border: 1px solid #ddd;
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+            transition: all 0.3s;
+        }
+
+        .grid-cell.highlighted {
+            background: #ffeb3b;
+            transform: scale(1.1);
+        }
+
+        .grid-cell.found {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .search-section {
+            margin: 20px 0;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .search-btn {
+            background: #2196F3;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            cursor: pointer;
+            width: 100%;
+            transition: background 0.3s;
+        }
+
+        .search-btn:hover {
+            background: #1976D2;
+        }
+
+        .found-words {
+            margin: 20px 0;
+        }
+
+        .found-word {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        .results-container {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .extracted-text {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #007bff;
+        }
+
+        .word-pair {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .scrambled-word {
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 16px;
+        }
+
+        .arrow {
+            color: #6c757d;
+            font-size: 18px;
+        }
+
+        .unscrambled-word {
+            font-weight: bold;
+            color: #28a745;
+            font-size: 16px;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .grid-cell {
+                width: 25px;
+                height: 25px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔤 Word Unscrambler</h1>
+        
+        <div class="upload-section">
+            <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+                📷 Upload Image with Text
+            </button>
+            <input type="file" id="fileInput" accept="image/*" capture="environment">
+            <div class="processing" id="processing" style="display: none;">
+                🔄 Processing image... Please wait...
+            </div>
+            <div class="error" id="error" style="display: none;"></div>
+        </div>
+
+        <div class="grid-container" id="gridContainer">
+            <h3>Word Search Grid:</h3>
+            <div class="word-search-grid" id="wordGrid"></div>
+            
+            <div class="search-section">
+                <input type="text" class="search-input" id="searchInput" placeholder="Enter a word to find..." maxlength="20">
+                <button class="search-btn" onclick="searchWord()">🔍 Find Word</button>
+            </div>
+            
+            <div class="found-words" id="foundWords">
+                <h4>Found Words:</h4>
+            </div>
+        </div>
+        
+        <div class="results-container" id="resultsContainer">
+            <h3>📝 Extracted Text:</h3>
+            <div class="extracted-text" id="extractedText"></div>
+            
+            <h3>🔤 Unscrambled Words:</h3>
+            <div id="unscrambledWords"></div>
+        </div>
+    </div>
+
+    <script>
+        let gridData = [];
+        let foundWords = [];
+        
+        document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchWord();
+            }
+        });
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const processing = document.getElementById('processing');
+            const error = document.getElementById('error');
+            const gridContainer = document.getElementById('gridContainer');
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            processing.style.display = 'block';
+            error.style.display = 'none';
+            gridContainer.style.display = 'none';
+            resultsContainer.style.display = 'none';
+
+            try {
+                // Convert file to data URL
+                const dataUrl = await fileToDataURL(file);
+                
+                // Use LLM to extract text and identify scrambled words
+                const completion = await websim.chat.completions.create({
+                    messages: [
+                        {
+                            role: "user",
+                            content: [
+                                {
+                                    type: "text",
+                                    text: `Analyze this image and extract all text. Then identify any words that appear to be scrambled (jumbled letters) and provide their unscrambled versions.
+                                    
+                                    Return the results as JSON with this exact format:
+                                    {
+                                        "extractedText": "All the text found in the image",
+                                        "scrambledWords": [
+                                            {
+                                                "scrambled": "EPPAL",
+                                                "unscrambled": "APPLE"
+                                            },
+                                            {
+                                                "scrambled": "TAC",
+                                                "unscrambled": "CAT"
+                                            }
+                                        ]
+                                    }
+                                    
+                                    Guidelines:
+                                    - Extract ALL visible text from the image
+                                    - Look for words that seem to have jumbled letters
+                                    - Only include words you're confident are scrambled
+                                    - Provide the most likely unscrambled version
+                                    - Use uppercase letters for consistency
+                                    - If no scrambled words are found, return an empty array`
+                                },
+                                {
+                                    type: "image_url",
+                                    image_url: { url: dataUrl }
+                                }
+                            ]
+                        }
+                    ],
+                    json: true
+                });
+
+                const result = JSON.parse(completion.content);
+                
+                displayResults(result);
+                processing.style.display = 'none';
+                resultsContainer.style.display = 'block';
+                
+            } catch (err) {
+                console.error('Error processing image:', err);
+                processing.style.display = 'none';
+                error.textContent = 'Error processing image. Please try again with a clearer image.';
+                error.style.display = 'block';
+            }
+        }
+
+        function fileToDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function displayGrid(grid) {
+            const gridElement = document.getElementById('wordGrid');
+            const rows = grid.length;
+            const cols = grid[0].length;
+            
+            gridElement.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            gridElement.innerHTML = '';
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.textContent = grid[row][col];
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    gridElement.appendChild(cell);
+                }
+            }
+        }
+
+        function searchWord() {
+            const searchInput = document.getElementById('searchInput');
+            const word = searchInput.value.toUpperCase().trim();
+            
+            if (!word || word.length < 2) {
+                alert('Please enter a word with at least 2 letters');
+                return;
+            }
+            
+            // Clear previous highlights
+            document.querySelectorAll('.grid-cell').forEach(cell => {
+                cell.classList.remove('highlighted');
+            });
+            
+            const foundPositions = findWordInGrid(word);
+            
+            if (foundPositions.length > 0) {
+                // Highlight found word
+                foundPositions.forEach(pos => {
+                    const cell = document.querySelector(`[data-row="${pos.row}"][data-col="${pos.col}"]`);
+                    if (cell) {
+                        cell.classList.add('highlighted', 'found');
+                    }
+                });
+                
+                // Add to found words list
+                if (!foundWords.includes(word)) {
+                    foundWords.push(word);
+                    addFoundWord(word);
+                }
+                
+                searchInput.value = '';
+                
+                // Remove highlight after 3 seconds
+                setTimeout(() => {
+                    document.querySelectorAll('.grid-cell').forEach(cell => {
+                        cell.classList.remove('highlighted');
+                    });
+                }, 3000);
+                
+            } else {
+                alert(`Word "${word}" not found in the grid`);
+            }
+        }
+
+        function findWordInGrid(word) {
+            const rows = gridData.length;
+            const cols = gridData[0].length;
+            const directions = [
+                [0, 1],   // right
+                [1, 0],   // down
+                [1, 1],   // diagonal down-right
+                [1, -1],  // diagonal down-left
+                [0, -1],  // left
+                [-1, 0],  // up
+                [-1, -1], // diagonal up-left
+                [-1, 1]   // diagonal up-right
+            ];
+            
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    for (let [dr, dc] of directions) {
+                        const positions = [];
+                        let found = true;
+                        
+                        for (let i = 0; i < word.length; i++) {
+                            const newRow = row + i * dr;
+                            const newCol = col + i * dc;
+                            
+                            if (newRow < 0 || newRow >= rows || newCol < 0 || newCol >= cols) {
+                                found = false;
+                                break;
+                            }
+                            
+                            if (gridData[newRow][newCol] !== word[i]) {
+                                found = false;
+                                break;
+                            }
+                            
+                            positions.push({ row: newRow, col: newCol });
+                        }
+                        
+                        if (found) {
+                            return positions;
+                        }
+                    }
+                }
+            }
+            
+            return [];
+        }
+
+        function addFoundWord(word) {
+            const foundWordsContainer = document.getElementById('foundWords');
+            const wordElement = document.createElement('span');
+            wordElement.className = 'found-word';
+            wordElement.textContent = word;
+            foundWordsContainer.appendChild(wordElement);
+        }
+        
+        function displayResults(result) {
+            // Display extracted text
+            const extractedTextElement = document.getElementById('extractedText');
+            extractedTextElement.textContent = result.extractedText || 'No text found in the image.';
+            
+            // Display unscrambled words
+            const unscrambledWordsElement = document.getElementById('unscrambledWords');
+            unscrambledWordsElement.innerHTML = '';
+            
+            if (result.scrambledWords && result.scrambledWords.length > 0) {
+                result.scrambledWords.forEach(wordPair => {
+                    const wordPairElement = document.createElement('div');
+                    wordPairElement.className = 'word-pair';
+                    wordPairElement.innerHTML = `
+                        <span class="scrambled-word">${wordPair.scrambled}</span>
+                        <span class="arrow">→</span>
+                        <span class="unscrambled-word">${wordPair.unscrambled}</span>
+                    `;
+                    unscrambledWordsElement.appendChild(wordPairElement);
+                });
+            } else {
+                unscrambledWordsElement.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No scrambled words detected in the image.</p>';
+            }
+        }
+    </script>
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v8c78df7c7c0f484497ecbca7046644da1771523124516" integrity="sha512-8DS7rgIrAmghBFwoOTujcf6D9rXvH8xm8JQ1Ja01h9QX8EzXldiszufYa4IFfKdLUKTTrnSFXLDkUEOTrZQ8Qg==" data-cf-beacon='{"version":"2024.11.0","token":"4c6229722a6346bc8eb5cb0e5eae5d41","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
